@@ -2,7 +2,7 @@ import { dev } from '$app/env';
 import { app } from '$lib/app';
 import { addDoc, collection, getFirestore } from 'firebase/firestore';
 
-const currentReferer = dev ? 'http://127.0.0.1:5173/' : 'https://display-headers.vercel.app/';
+const currentReferer = dev ? 'http://127.0.0.1:5173/' : 'https://vercel.com/';
 
 export const GET = async ({ request }) => {
 	type Header = { key: string; value: string };
