@@ -1,30 +1,13 @@
 <script lang="ts">
-	import { app } from '$lib/app';
 	import { onMount } from 'svelte';
-	import { doc, getDoc, getFirestore } from 'firebase/firestore';
 	import { page } from '$app/stores';
-
-	type Header = { key: string; value: string };
-	type Invocation = {
-		id: string;
-		timestamp: number;
-		headers: Header[];
-	};
+	import type { Invocation } from '$lib/models';
+	import { getInvocation } from '$lib/db';
 
 	let invocation: Invocation | undefined;
 
 	onMount(async () => {
-		const db = getFirestore(app);
-
-		const docRef = doc(db, 'invocations', $page.params.id);
-		const docSnapshot = await getDoc(docRef);
-
-		if (docSnapshot.exists()) {
-			invocation = {
-				id: docSnapshot.id,
-				...docSnapshot.data()
-			} as Invocation;
-		}
+		invocation = await getInvocation($page.params.id);
 	});
 
 	const goBack = () => {

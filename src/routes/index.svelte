@@ -1,54 +1,24 @@
 <script lang="ts">
-	import { app } from '$lib/app';
 	import { onDestroy, onMount } from 'svelte';
-	import {
-		collection,
-		deleteDoc,
-		doc,
-		getFirestore,
-		onSnapshot,
-		type Unsubscribe
-	} from 'firebase/firestore';
-
-	type Header = { key: string; value: string };
-	type Invocation = {
-		id: string;
-		timestamp: number;
-		headers: Header[];
-	};
+	import type { Invocation } from '$lib/models';
+	import { deleteAllInvocations, watchInvocations } from '$lib/db';
+	import type { Subscription } from 'rxjs';
 
 	let invocations: Invocation[] = [];
-
-	let subscription: Unsubscribe | undefined;
-
-	const db = getFirestore(app);
-	const collectionRef = collection(db, 'invocations');
+	let subscription: Subscription | undefined;
 
 	onMount(async () => {
-		subscription = onSnapshot(collectionRef, (querySnapshot) => {
-			let tmp: Invocation[] = [];
-			querySnapshot.forEach((doc) => {
-				const invocation = {
-					id: doc.id,
-					...doc.data()
-				} as Invocation;
-
-				tmp.push(invocation);
-			});
-
-			invocations = tmp.sort((a, b) => b.timestamp - a.timestamp);
+		subscription = watchInvocations().subscribe((data) => {
+			invocations = data;
 		});
 	});
 
 	onDestroy(() => {
-		subscription?.();
+		subscription?.unsubscribe();
 	});
 
-	const onClearButton = () => {
-		invocations.forEach((invocation) => {
-			const docRef = doc(db, 'invocations', invocation.id);
-			deleteDoc(docRef);
-		});
+	const onClearButton = async () => {
+		await deleteAllInvocations(invocations);
 	};
 </script>
 
