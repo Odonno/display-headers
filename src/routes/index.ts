@@ -1,3 +1,9 @@
+import { dev } from '$app/env';
+import { app } from '$lib/app';
+import { addDoc, collection, getFirestore } from 'firebase/firestore';
+
+const currentReferer = dev ? 'http://127.0.0.1:5173/' : 'https://display-headers.vercel.app/';
+
 export const GET = async ({ request }) => {
 	type Header = { key: string; value: string };
 	const headers: Header[] = [];
@@ -6,9 +12,17 @@ export const GET = async ({ request }) => {
 		headers.push({ key, value });
 	}
 
-	return {
-		body: {
+	const refererHeader = headers.find(({ key }) => key.toLowerCase() === 'referer');
+
+	if (refererHeader?.value !== currentReferer) {
+		const db = getFirestore(app);
+		await addDoc(collection(db, 'invocations'), {
+			timestamp: new Date().getTime(),
 			headers
-		}
+		});
+	}
+
+	return {
+		body: {}
 	};
 };

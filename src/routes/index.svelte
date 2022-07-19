@@ -1,22 +1,51 @@
 <script lang="ts">
-	type Header = { key: string; value: string };
+	import { app } from '$lib/app';
+	import { onDestroy, onMount } from 'svelte';
+	import { collection, getFirestore, onSnapshot, type Unsubscribe } from 'firebase/firestore';
 
-	export let headers: Header[];
+	type Header = { key: string; value: string };
+	type Invocation = {
+		id: string;
+		timestamp: number;
+		headers: Header[];
+	};
+
+	let invocations: Invocation[] = [];
+
+	let subscription: Unsubscribe | undefined;
+
+	onMount(async () => {
+		const db = getFirestore(app);
+
+		const collectionRef = collection(db, 'invocations');
+
+		subscription = onSnapshot(collectionRef, (querySnapshot) => {
+			let tmp: Invocation[] = [];
+			querySnapshot.forEach((doc) => {
+				const invocation = {
+					id: doc.id,
+					...doc.data()
+				} as Invocation;
+
+				tmp.push(invocation);
+			});
+
+			invocations = tmp.sort((a, b) => b.timestamp - a.timestamp);
+		});
+	});
+
+	onDestroy(() => {
+		subscription?.();
+	});
 </script>
 
-<table>
-	<thead>
-		<tr>
-			<th>Header</th>
-			<th>Value</th>
-		</tr>
-	</thead>
-	<tbody>
-		{#each headers as { key, value }}
-			<tr>
-				<td>{key}</td>
-				<td>{value}</td>
-			</tr>
-		{/each}
-	</tbody>
-</table>
+<ul>
+	{#each invocations as invocation (invocation.id)}
+		<li>
+			<a href={`/invocations/${invocation.id}`}>
+				<b>{new Date(invocation.timestamp).toLocaleString()}</b>
+				<div>{invocation.headers.length} headers</div>
+			</a>
+		</li>
+	{/each}
+</ul>
