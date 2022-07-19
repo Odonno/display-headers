@@ -1,7 +1,14 @@
 <script lang="ts">
 	import { app } from '$lib/app';
 	import { onDestroy, onMount } from 'svelte';
-	import { collection, getFirestore, onSnapshot, type Unsubscribe } from 'firebase/firestore';
+	import {
+		collection,
+		deleteDoc,
+		doc,
+		getFirestore,
+		onSnapshot,
+		type Unsubscribe
+	} from 'firebase/firestore';
 
 	type Header = { key: string; value: string };
 	type Invocation = {
@@ -14,11 +21,10 @@
 
 	let subscription: Unsubscribe | undefined;
 
+	const db = getFirestore(app);
+	const collectionRef = collection(db, 'invocations');
+
 	onMount(async () => {
-		const db = getFirestore(app);
-
-		const collectionRef = collection(db, 'invocations');
-
 		subscription = onSnapshot(collectionRef, (querySnapshot) => {
 			let tmp: Invocation[] = [];
 			querySnapshot.forEach((doc) => {
@@ -37,7 +43,16 @@
 	onDestroy(() => {
 		subscription?.();
 	});
+
+	const onClearButton = () => {
+		invocations.forEach((invocation) => {
+			const docRef = doc(db, 'invocations', invocation.id);
+			deleteDoc(docRef);
+		});
+	};
 </script>
+
+<button type="button" on:click={onClearButton}>Clear all invocations</button>
 
 <ul>
 	{#each invocations as invocation (invocation.id)}
